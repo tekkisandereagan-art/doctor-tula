@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Auth Helpers
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+
+    // Role definitions
+    function isAdmin() {
+      return hasRole('ADMIN') || request.auth.token.email == 'tekkisandereagan@gmail.com';
+    }
+
+    function isDoctor() {
+      return hasRole('DOCTOR');
+    }
+
+    function isNurse() {
+      return hasRole('NURSE');
+    }
+
+    function isLab() {
+      return hasRole('LAB');
+    }
+
+    function isReception() {
+      return hasRole('RECEPTION_PHARMACY');
+    }
+
+    function isStaff() {
+      return isAuthenticated() && getUserData().role in ['ADMIN', 'DOCTOR', 'NURSE', 'LAB', 'RECEPTION_PHARMACY'];
+    }
+
+    // User Profiles & Staff Management
+    match /users/{userId} {
+      allow read: if isStaff();
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      
+      match /staff/{staffId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // Patient Directory
+    match /patients/{patientId} {
+      // Required for all staff to register and lookup patients for visits/reports
+      allow read, create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // Clinical Visits (Electronic Health Records)
+    match /visits/{visitId} {
+      // Full read access for all staff to allow reporting (Admin/Reception) 
+      // and cross-departmental care (Doctors/Nurses/Lab)
+      allow read: if isStaff();
+      allow create: if isStaff();
+      
+      allow update: if isStaff() && (
+        // Billing, Invoicing & Status: Reception/Pharmacy or Admin can finalize visits and add charges
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['additionalCharges', 'consultationFee', 'status'])) 
+          ? (isReception() || isAdmin() || isDoctor()) : true
+      ) && (
+        // Lab Investigations: Lab Techs, Doctors, or Admins
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['labRequests'])) 
+          ? (isLab() || isAdmin() || isDoctor()) : true
+      ) && (
+        // Clinical Data & Pharmacy Dispensing: 
+        // Doctors/Admins can prescribe. Reception/Pharmacy can mark as dispensed.
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['prescription', 'diagnosis', 'plan', 'presentingComplaints', 'historyOfPresentingComplaints', 'physicalExamFindings', 'systematicReview'])) 
+          ? (isDoctor() || isAdmin() || isReception()) : true
+      ) && (
+        // Nursing Station: Vitals, Fluid Monitoring
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['vitals', 'fluidBalance', 'administeredMeds', 'nurseNotes'])) 
+          ? (isNurse() || isDoctor() || isAdmin()) : true
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Inventory Control
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated();
+      allow update: if isStaff();
+      allow create, delete: if isAdmin();
+    }
+
+    // Financial Records (Daily Expenses)
+    match /expenses/{expenseId} {
+      // BOTH Admin and Reception require read access to generate financial reports and daily summaries
+      allow read: if isAdmin() || isReception();
+      allow create: if isStaff();
+      allow update, delete: if isAdmin();
+    }
+
+    // Scheduling
+    match /appointments/{appId} {
+      allow read, create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // Audit Logs
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+  }
+}

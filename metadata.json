@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Copy of MedCore Facility Management System",
+  "description": "A comprehensive medical facility management system featuring Role-Based Access Control (RBAC) for Master Admins, Doctors, Nurses, Lab Technicians, and Reception/Pharmacy staff. Includes patient lifecycle management, reporting, and clinical workflows.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

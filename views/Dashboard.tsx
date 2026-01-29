@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useStore } from '../store';
 import { UserRole } from '../types';
@@ -27,7 +28,7 @@ const Dashboard: React.FC = () => {
       value: patients.length, 
       icon: Users, 
       color: 'text-blue-600', 
-      bg: 'bg-blue-100' 
+      bg: 'bg-blue-50' 
     },
     { 
       label: isReception ? 'Today\'s Check-ins' : (isAdmin ? 'Pending Lab Tests' : 'Active Consultations'), 
@@ -38,7 +39,7 @@ const Dashboard: React.FC = () => {
           : visits.filter(v => v.status !== 'Completed').length), 
       icon: isReception ? UserCheck : (isAdmin ? FlaskConical : Activity), 
       color: 'text-emerald-600', 
-      bg: 'bg-emerald-100',
+      bg: 'bg-emerald-50',
       hide: false
     },
     { 
@@ -48,7 +49,7 @@ const Dashboard: React.FC = () => {
         : appointments.filter(a => a.status === 'Scheduled').length, 
       icon: isReception ? CreditCard : Calendar, 
       color: 'text-amber-600', 
-      bg: 'bg-amber-100',
+      bg: 'bg-amber-50',
       hide: false
     },
     { 
@@ -56,8 +57,8 @@ const Dashboard: React.FC = () => {
       value: inventory.filter(i => i.stock < 20).length, 
       icon: Package, 
       color: 'text-rose-600', 
-      bg: 'bg-rose-100',
-      hide: isReception || isDoctor // Hidden for both Pharmacy/Reception and Doctors
+      bg: 'bg-rose-50',
+      hide: isReception || isDoctor
     },
   ];
 
@@ -78,28 +79,28 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-          <Activity size={160} />
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <Activity size={100} />
         </div>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Welcome, {currentUser?.fullName}</h2>
-            <p className="text-slate-500 mt-1 font-medium">
+            <h2 className="text-xl font-bold text-slate-800 tracking-tight leading-none">Welcome back, {currentUser?.fullName}</h2>
+            <p className="text-slate-500 mt-1 font-medium text-xs">
               {isReception 
-                ? 'Reception & Pharmacy portal active. UGX billing enabled.' 
-                : (isAdmin ? 'System oversight active. Uganda Shilling (UGX) billing enabled.' : `Logged in as ${currentUser?.role} in ${currentUser?.department}.`)}
+                ? 'Reception & Pharmacy portal active.' 
+                : (isAdmin ? 'System oversight active. UGX billing enabled.' : `Logged in as ${currentUser?.role}.`)}
             </p>
           </div>
           <div className="flex gap-2">
-            <span className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20">
+            <span className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-md">
               {currentUser?.role?.replace('_', ' ')}
             </span>
             {(isAdmin || isReception) && (
-              <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl flex items-center gap-2 font-black text-xs uppercase tracking-widest border border-emerald-100">
-                <TrendingUp size={14} />
-                UGX {totalRevenue.toLocaleString()} Revenue
+              <div className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg flex items-center gap-1.5 font-black text-[10px] uppercase tracking-widest border border-emerald-100">
+                <TrendingUp size={12} />
+                UGX {totalRevenue.toLocaleString()}
               </div>
             )}
           </div>
@@ -108,70 +109,65 @@ const Dashboard: React.FC = () => {
 
       <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${filteredStats.length} gap-4`}>
         {filteredStats.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-            <div className={`p-4 rounded-xl ${stat.bg} ${stat.color}`}>
-              <stat.icon size={28} />
+          <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 hover:shadow-md transition-all">
+            <div className={`p-2.5 rounded-lg ${stat.bg} ${stat.color}`}>
+              <stat.icon size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-black text-slate-900 leading-none">{stat.value}</h3>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+              <h3 className="text-xl font-black text-slate-900 leading-none">{stat.value}</h3>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold mb-8 flex items-center gap-2 text-slate-800">
-            <Activity className="text-blue-500" size={20} />
-            Weekly Facility Summary
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="text-sm font-bold mb-6 flex items-center gap-2 text-slate-800 uppercase tracking-tight">
+            <Activity className="text-blue-500" size={16} />
+            Weekly Summary
           </h3>
-          <div className="h-64">
+          <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
                 <Tooltip 
                   cursor={{fill: '#f8fafc'}}
-                  contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}} 
+                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px'}} 
                 />
-                <Bar dataKey="visits" fill="#3b82f6" radius={[8, 8, 0, 0]} barSize={32} />
+                <Bar dataKey="visits" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <ClipboardCheck className="text-emerald-500" size={20} />
-              Recent Activity Stream
-            </h3>
-          </div>
-          <div className="space-y-4 flex-1">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <h3 className="text-sm font-bold mb-6 flex items-center gap-2 text-slate-800 uppercase tracking-tight">
+            <ClipboardCheck className="text-emerald-500" size={16} />
+            Activity Stream
+          </h3>
+          <div className="space-y-2 flex-1 overflow-y-auto hide-scrollbar max-h-48">
             {visits.slice(0, 5).map(v => (
-              <div key={v.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all group cursor-default">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 shadow-sm group-hover:border-blue-200 transition-colors">
-                    <UserCheck size={16} className="text-slate-400 group-hover:text-blue-500" />
+              <div key={v.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group cursor-default">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-slate-200">
+                    <UserCheck size={14} className="text-slate-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-700">Patient Session #{v.id.slice(-4)}</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{v.status.replace('-', ' ')}</p>
+                    <p className="text-[11px] font-bold text-slate-700 leading-tight">Session #{v.id.slice(-4)}</p>
+                    <p className="text-[8px] text-slate-400 uppercase font-black tracking-widest">{v.status.replace('-', ' ')}</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-black text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-100">
+                <span className="text-[8px] font-black text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-100">
                   {new Date(v.date).toLocaleDateString()}
                 </span>
               </div>
             ))}
             {visits.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
-                  <Activity size={24} />
-                </div>
-                <p className="text-sm text-slate-400 font-medium italic">No recent sessions detected.</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+                <p className="text-[10px] text-slate-400 font-medium italic">No recent sessions.</p>
               </div>
             )}
           </div>

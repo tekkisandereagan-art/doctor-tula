@@ -75,8 +75,9 @@ export interface Visit {
     ent?: string;
     cvs?: string;
     cns?: string;
-    git?: string;
-    rs?: string;
+    git?: string; // Abdominal Review
+    rs?: string;  // Respiratory
+    general?: string;
   };
   diagnosis?: string;
   plan?: string;
@@ -96,6 +97,7 @@ export interface Visit {
     duration: string;
     dispensed: boolean;
     price: number;
+    quantity?: number; // Added for sales tracking
   }>;
   labRequests?: Array<{
     id: string;

@@ -43,8 +43,16 @@ service cloud.firestore {
     // User Profiles & Staff Management
     match /users/{userId} {
       allow read: if isStaff();
-      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      // Only admins can create new staff records.
+      // Users can update their own profile EXCEPT for role, active status, or email (username).
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() && request.auth.uid == userId && 
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'active', 'username'])
+      );
+      allow delete: if isAdmin();
       
+      // Admin sub-collection for staff tracking
       match /staff/{staffId} {
         allow read, write: if isAdmin();
       }
@@ -52,64 +60,80 @@ service cloud.firestore {
 
     // Patient Directory
     match /patients/{patientId} {
-      // Required for all staff to register and lookup patients for visits/reports
       allow read, create, update: if isStaff();
       allow delete: if isAdmin();
     }
 
     // Clinical Visits (Electronic Health Records)
     match /visits/{visitId} {
-      // Full read access for all staff to allow reporting (Admin/Reception) 
-      // and cross-departmental care (Doctors/Nurses/Lab)
       allow read: if isStaff();
+      // Any staff can create a visit (e.g., Reception checking in, or OTC sale in Pharmacy)
       allow create: if isStaff();
       
       allow update: if isStaff() && (
-        // Billing, Invoicing & Status: Reception/Pharmacy or Admin can finalize visits and add charges
-        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['additionalCharges', 'consultationFee', 'status'])) 
+        // Protect immutable metadata to maintain record integrity
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'date', 'patientId'])
+      ) && (
+        // Status Workflow: Any staff can advance/update visit status (Checked-In -> With-Doctor -> Pharmacy-Pending, etc.)
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])) 
+          ? isStaff() : true
+      ) && (
+        // Billing & Finance: Only Reception, Admin, or Doctor manage fees and procedural charges
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['additionalCharges', 'consultationFee'])) 
           ? (isReception() || isAdmin() || isDoctor()) : true
       ) && (
-        // Lab Investigations: Lab Techs, Doctors, or Admins
+        // Laboratory: Lab Techs (LAB role), Doctors, or Admins manage requests, results, and structured reports
         (request.resource.data.diff(resource.data).affectedKeys().hasAny(['labRequests'])) 
           ? (isLab() || isAdmin() || isDoctor()) : true
       ) && (
-        // Clinical Data & Pharmacy Dispensing: 
-        // Doctors/Admins can prescribe. Reception/Pharmacy can mark as dispensed.
-        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['prescription', 'diagnosis', 'plan', 'presentingComplaints', 'historyOfPresentingComplaints', 'physicalExamFindings', 'systematicReview'])) 
+        // Clinical EHR: Doctors and Admins manage core clinical findings and differential diagnoses
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['diagnosis', 'plan', 'presentingComplaints', 'historyOfPresentingComplaints', 'physicalExamFindings', 'systematicReview', 'nextReviewDate'])) 
+          ? (isDoctor() || isAdmin()) : true
+      ) && (
+        // Prescription: Prescribing is for Doctors/Admins; marking as 'dispensed' or adjusting is for Pharmacy
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['prescription']))
           ? (isDoctor() || isAdmin() || isReception()) : true
       ) && (
-        // Nursing Station: Vitals, Fluid Monitoring
+        // Nursing & Triage: Nurses and Doctors manage vitals, ward notes, and fluid charts
         (request.resource.data.diff(resource.data).affectedKeys().hasAny(['vitals', 'fluidBalance', 'administeredMeds', 'nurseNotes'])) 
           ? (isNurse() || isDoctor() || isAdmin()) : true
       );
 
+      // Permanent clinical records should only be deleted by Master Admins
       allow delete: if isAdmin();
     }
 
     // Inventory Control
     match /inventory/{itemId} {
       allow read: if isAuthenticated();
-      allow update: if isStaff();
+      // Reception/Pharmacy staff can decrement 'stock' during sales or dispensing.
+      // Modifying pricing, names, or drug descriptions is restricted to Admins.
+      allow update: if isStaff() && (
+        isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock'])
+      );
       allow create, delete: if isAdmin();
     }
 
-    // Financial Records (Daily Expenses)
+    // Financial Records (Operational Expenses)
     match /expenses/{expenseId} {
-      // BOTH Admin and Reception require read access to generate financial reports and daily summaries
+      // Expenses are visible to management and accounts (Reception/Pharmacy)
       allow read: if isAdmin() || isReception();
+      // Any staff can record an expense (e.g. buying emergency supplies)
       allow create: if isStaff();
+      // Modification or deletion requires Administrative override
       allow update, delete: if isAdmin();
     }
 
-    // Scheduling
+    // Facility Scheduling
     match /appointments/{appId} {
       allow read, create, update: if isStaff();
       allow delete: if isAdmin();
     }
 
-    // Audit Logs
+    // Security & Audit Logs
     match /auditLogs/{logId} {
       allow read: if isAdmin();
+      // System automatically logs actions; only creation is allowed via the store logic
       allow create: if isAuthenticated();
       allow update, delete: if false;
     }
